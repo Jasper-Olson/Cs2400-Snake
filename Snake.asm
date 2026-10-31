@@ -132,6 +132,12 @@ trimTail
 #leave
 exit:
 .end_macro 
+
+.macro sleep
+li $v0, 32
+la $a0, 200
+syscall
+.end_macro 
 .text
 
 main:
@@ -142,20 +148,69 @@ addi $s1, $s0, 220
 #starting the tail at space 51
 addi $s2, $s0, 204
 
-#example movement
+#example for movement
+loop:
+moveSnake('d')
+drawScreen
+sleep
+moveSnake('d')
+drawScreen
+sleep
+moveSnake('d')
+drawScreen
+sleep
+moveSnake('d')
+drawScreen
+sleep
 moveSnake('w')
 drawScreen
+sleep
 moveSnake('a')
 drawScreen
+sleep
+moveSnake('w')
+drawScreen
+sleep
 moveSnake('a')
 drawScreen
+sleep
 moveSnake('a')
 drawScreen
+sleep
+moveSnake('a')
+drawScreen
+sleep
+moveSnake('a')
+drawScreen
+sleep
+moveSnake('a')
+drawScreen
+sleep
+moveSnake('a')
+drawScreen
+sleep
 moveSnake('s')
 drawScreen
+sleep
 moveSnake('a')
 drawScreen
-
+sleep
+moveSnake('s')
+drawScreen
+sleep
+moveSnake('d')
+drawScreen
+sleep
+moveSnake('d')
+drawScreen
+sleep
+moveSnake('d')
+drawScreen
+sleep
+moveSnake('d')
+drawScreen
+sleep
+j loop
 
 exit:
 li $v0, 10
