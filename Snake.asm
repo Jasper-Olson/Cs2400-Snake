@@ -1,15 +1,16 @@
 #CS2640
 #Jasper Olson, Kimberly Bui, Lily Konefat, Maxwell Severson, Sean Ayuby
 
-#--------------------NOTE--------------------------
-# This code uses the Keyboard and Display MMIO Simulator for I/O, *not* the console at the bottom of the screen
-# TO RUN IT, GO TO TOOLS -> KEYBOARD AND DISPLAY MMIO SIMULATOR AND PRESS CONNECT TO MIPS IN THE BOTTOM LEFT CORNER
-# THEN YOU CAN TYPE THE WASD CONTROLS IN THE BOTTOM FIELD
-# thank you :)
+#-----------------------IMPORTANT NOTE-----------------------------
+# This code uses the Keyboard and Display MMIO Simulator for I/O, *NOT* the console at the bottom of the screen
+# TO RUN THIS CODE, GO TO TOOLS -> KEYBOARD AND DISPLAY MMIO SIMULATOR AND PRESS CONNECT TO MIPS IN THE BOTTOM LEFT CORNER
+# THEN YOU CAN ASSEMBLE, PRESS RUN, AND TYPE THE WASD CONTROLS IN THE BOTTOM FIELD
+# WHEN YOU DIE, CLICK THE REPLAY BUTTON AT THE TOP, THEN THE RUN BUTTON, THEN THE RESET BUTTON ON THE MMIO SCREEN
+# thank you for reading :)
 
 
-#adresses taken:
-#s0  - address 0 of screen
+#adresses occupied:
+#s0  - address 0 of the screen
 #s1 - snake head's address
 #s2 - snake tail's address
 #s3 - time of last update
@@ -18,17 +19,18 @@
 #t3 - user input direction
 
 .data
-newLine: .asciiz "\n"
-yay: .asciiz "YAY"
+#holds all the info to draw what's happening
 screen: .word 
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 
 #prints out the full grid with spaces for 0 and boxes for 1
 .macro drawScreen
@@ -38,7 +40,7 @@ li $t0, 0
 putChar(12)
 loop: 
 #exit after traversing the array
-beq $t0, 256, end
+beq $t0, 320, end
 #print a new line every 16 digits 
 rem $t1, $t0, 32
 beq $t1, 0, addLine
@@ -73,7 +75,7 @@ j loop
 
 end:
 #shift s0 back to its starting register
-subi $s0, $s0, 1024
+subi $s0, $s0, 1280
 #exit
 .end_macro 
 
@@ -179,7 +181,6 @@ loop:
 #load the time since starting the program
 li $v0, 30
 syscall
-
 #load keyboard control register
 lw $t0, 0xFFFF0000($zero)
 #check if there is a key
@@ -195,9 +196,8 @@ drawScreen
 j loop
 
 changeDirection:
-#load the new keypress into t0 first to
-#check if the user doubles back into themself
-#also make sure the key is W,A,S, or D
+#load the new keypress into $t0 to check if the input was valid
+#first, make sure the key is W,A,S, or D
 lw $t0, 0xFFFF0004($zero)
 beq $t0, 'w', keyOK
 beq $t0, 'a', keyOK
@@ -205,19 +205,20 @@ beq $t0, 's', keyOK
 beq $t0, 'd', keyOK
 j loop         
 keyOK:
-#s to w
+#next, make sure it's not trying to back into itself
+#pressing w after s
 subi $t0, $t0, 4
 beq $t0, $t3, loop
-#w to s
+#pressing s after w
 addi $t0, $t0, 8
 beq $t0, $t3, loop
-#a to d
+#pressing d after a
 subi $t0, $t0, 7
 beq $t0, $t3, loop
-#d to a
+#pressing a after d
 addi $t0, $t0, 6
 beq $t0, $t3, loop
-#otherwise, update the direction
+#otherwise, the key press is valid, so update the direction in $t3
 lw $t3, 0xFFFF0004($zero)
 j loop
 
