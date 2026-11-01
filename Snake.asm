@@ -4,7 +4,7 @@
 #-----------------------IMPORTANT NOTE-----------------------------
 # This code uses the Keyboard and Display MMIO Simulator for I/O, *NOT* the console at the bottom of the screen
 # TO RUN THIS CODE, GO TO TOOLS -> KEYBOARD AND DISPLAY MMIO SIMULATOR AND PRESS CONNECT TO MIPS IN THE BOTTOM LEFT CORNER
-# THEN YOU CAN ASSEMBLE, PRESS RUN, AND TYPE THE WASD CONTROLS IN THE BOTTOM FIELD
+# THEN YOU CAN ASSEMBLE, PRESS RUN, PRESS RESET ON THE MMIO PAGE, AND TYPE THE WASD CONTROLS IN THE BOTTOM FIELD
 # WHEN YOU DIE, CLICK THE REPLAY BUTTON AT THE TOP, THEN THE RUN BUTTON, THEN THE RESET BUTTON ON THE MMIO SCREEN
 # thank you for reading :)
 
@@ -174,7 +174,6 @@ addi $s1, $s0, 428
 #starting the tail at space 99
 addi $s2, $s0, 392
 li $t3, 'd'
-j loop
 
 #movement
 loop:
@@ -183,19 +182,39 @@ li $v0, 30
 syscall
 #load keyboard control register
 lw $t0, 0xFFFF0000($zero)
-#check if there is a key
+#check if there is a key pressed (the first bit stores that)
 andi $t0, $t0, 0x0001
 #if something was pressed, go to the method
 bgt $t0, $zero, changeDirection
-   
+#loop back to the top if not enough time has passed
 subu $t2, $a0, $s3  
-bltu $t2, 200, loop    
-move $s3, $a0          
+bltu $t2, 200, loop
+#now that we're ready, update $s3 to mark this timestamp
+move $s3, $a0     
+
+#if 2 keypresses have come through since the last update, handle the old one first
+bne $t1, 1, safeToMoveSnake
+li $t1, 0
+moveSnake($t4)
+drawScreen
+j loop
+
+#otherwise, move it in the new direction
+safeToMoveSnake:
 moveSnake($t3)
+#save the last direction that was actually executed
+move $t4, $t3
 drawScreen
 j loop
 
 changeDirection:
+#make sure $t3 hold the last dirction EXECUTED, so that unexecuted instructions don't get overridden
+beq $t3, $t4, sameDir
+#if the old $t3 hasn't been run yet, flag $t1 to let MoveSnake run the old one first
+li $t1, 1
+#save the old value to t4 before t3 gets overridden
+move $t4, $t3
+sameDir:
 #load the new keypress into $t0 to check if the input was valid
 #first, make sure the key is W,A,S, or D
 lw $t0, 0xFFFF0004($zero)
