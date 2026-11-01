@@ -63,7 +63,7 @@ sw $t1, 0xffff000c($zero)
 j newLineReturn
 
 printBody:
-putChar(0)
+putChar('x')
 addi $s0, $s0, 4
 j loop
 
