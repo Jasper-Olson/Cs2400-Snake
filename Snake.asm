@@ -1,6 +1,11 @@
 #CS2640
 #Jasper Olson, Kimberly Bui, Lily Konefat, Maxwell Severson, Sean Ayuby
 
+#--------------------NOTE--------------------------
+# This code uses the Keyboard and Display MMIO Simulator for I/O, *not* the console at the bottom of the screen
+# TO RUN IT, GO TO TOOLS -> KEYBOARD AND DISPLAY MMIO SIMULATOR AND PRESS CONNECT TO MIPS IN THE BOTTOM LEFT CORNER
+# THEN YOU CAN TYPE THE WASD CONTROLS IN THE BOTTOM FIELD
+# thank you :)
 
 
 #adresses taken:
@@ -16,24 +21,26 @@
 newLine: .asciiz "\n"
 yay: .asciiz "YAY"
 screen: .word 
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 #prints out the full grid with spaces for 0 and boxes for 1
 .macro drawScreen
 #reset t0 because it gets overridden all over the place
 li $t0, 0
+#reset the previous screen drawn in the MMIO display
+putChar(12)
 loop: 
 #exit after traversing the array
-beq $t0, 128, end
+beq $t0, 256, end
 #print a new line every 16 digits 
-rem $t1, $t0, 16
+rem $t1, $t0, 32
 beq $t1, 0, addLine
 #if a new line was added, it jumps back here
 newLineReturn:
@@ -49,30 +56,36 @@ j printBody
 #afterward, they both jump back to loop
 
 addLine:
-li $v0, 4
-la $a0, newLine
-syscall
+putChar(10)
+sw $t1, 0xffff000c($zero)
 j newLineReturn
 
 printBody:
-#0 in mars ascii looks like a rectangle
-li $a0, 0
-syscall
+putChar(0)
 addi $s0, $s0, 4
 j loop
 
+#print a space to the MMIO display
 printSpace:
-li $a0, ' '
-syscall
+putChar(32)
 addi $s0, $s0, 4
 j loop
 
 end:
 #shift s0 back to its starting register
-subi $s0, $s0, 512
+subi $s0, $s0, 1024
 #exit
 .end_macro 
 
+#prints a character to the MMIO display, or clears the display
+.macro putChar(%c)
+waitReady:
+lw   $t1, 0xffff0008($zero)
+andi $t1, $t1, 1
+beqz $t1, waitReady
+li   $t1, %c
+sw   $t1, 0xffff000c($zero)
+.end_macro
 
 #removes 1 tail, sets $s2 to the space it points to
 .macro trimTail
@@ -81,7 +94,7 @@ subi $s0, $s0, 512
 lw $t0, 0($s2)
 #translate registers to bytes
 mul $t0, $t0, 4
-#clear the value if the old tail
+#clear the value of the old tail
 sw $zero, 0($s2)
 #move s2 to the next segment over
 add $s2, $s2, $t0
@@ -91,7 +104,7 @@ add $s2, $s2, $t0
 
 #Moves the head 1 unit in direction dir
 .macro moveHead(%dir) 
-#dir equals -1, +1, -16, or +16, which are the number of 
+#dir equals -1, +1, -32, or +32, which are the number of 
 #units needed to shift right, left, up, or down
 move $t0, %dir
 #save the new direction value to the old head
@@ -100,14 +113,20 @@ sw $t0, 0($s1)
 mul $t0, $t0, 4
 #move that many spaces forward
 add $s1, $s1, $t0
+#check if the next space is a body segment or wall
+lw $t0, 0($s1)
+#if it is, die
+bnez  $t0, exit 
 #put a placeholder value in the new head, so it still gets drawn
 li $t0, 1
 sw $t0, 0($s1)
 #exit
 .end_macro 
 
+
 #combine moveHead and trimTail, taking WASD as a parameter
 .macro moveSnake (%dir)
+trimTail
 move $t0, %dir
 #check what the input was
 beq $t0, 'w', wCase
@@ -117,8 +136,8 @@ beq $t0, 'd', dCase
 #if it was something else, disregard it
 j exit
 wCase:
-#w = up = back 16 spaces 
-li $t0, -16
+#w = up = back 32 spaces 
+li $t0, -32
 #jump to what comes next, so t0 doesn't get overridden
 j next
 aCase:
@@ -126,8 +145,8 @@ aCase:
 li $t0, -1
 j next
 sCase:
-#s = down = forward 16  spaces
-li $t0, 16
+#s = down = forward 32 spaces
+li $t0, 32
 j next
 dCase:
 #d = right = forward 1 space
@@ -136,8 +155,6 @@ li $t0, 1
 next:
 #pass in t0 for moveHead
 moveHead($t0)
-#trim tail too
-trimTail
 #leave
 exit:
 .end_macro 
@@ -150,18 +167,18 @@ syscall
 move $s3, $a0
 #screen stays in $s0
 la $s0, screen
-#starting the head at space 55
-addi $s1, $s0, 220
-#starting the tail at space 51
-addi $s2, $s0, 204
-li $s4, 'd'
+#starting the head at space 103
+addi $s1, $s0, 428
+#starting the tail at space 99
+addi $s2, $s0, 392
+li $t3, 'd'
 j loop
 
 #movement
 loop:
+#load the time since starting the program
 li $v0, 30
 syscall
-subu $t2, $a0, $s3     
 
 #load keyboard control register
 lw $t0, 0xFFFF0000($zero)
@@ -169,7 +186,8 @@ lw $t0, 0xFFFF0000($zero)
 andi $t0, $t0, 0x0001
 #if something was pressed, go to the method
 bgt $t0, $zero, changeDirection
-
+   
+subu $t2, $a0, $s3  
 bltu $t2, 200, loop    
 move $s3, $a0          
 moveSnake($t3)
@@ -177,6 +195,29 @@ drawScreen
 j loop
 
 changeDirection:
+#load the new keypress into t0 first to
+#check if the user doubles back into themself
+#also make sure the key is W,A,S, or D
+lw $t0, 0xFFFF0004($zero)
+beq $t0, 'w', keyOK
+beq $t0, 'a', keyOK
+beq $t0, 's', keyOK
+beq $t0, 'd', keyOK
+j loop         
+keyOK:
+#s to w
+subi $t0, $t0, 4
+beq $t0, $t3, loop
+#w to s
+addi $t0, $t0, 8
+beq $t0, $t3, loop
+#a to d
+subi $t0, $t0, 7
+beq $t0, $t3, loop
+#d to a
+addi $t0, $t0, 6
+beq $t0, $t3, loop
+#otherwise, update the direction
 lw $t3, 0xFFFF0004($zero)
 j loop
 
