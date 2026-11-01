@@ -1,11 +1,20 @@
+#CS2640
+#Jasper Olson, Kimberly Bui, Lily Konefat, Maxwell Severson, Sean Ayuby
+
+
+
 #adresses taken:
 #s0  - address 0 of screen
 #s1 - snake head's address
 #s2 - snake tail's address
+#s3 - time of last update
 #t0 & t1 - temp values for all the macros
+#t2 - time elapsed since code began
+#t3 - user input direction
 
 .data
 newLine: .asciiz "\n"
+yay: .asciiz "YAY"
 screen: .word 
 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -99,7 +108,7 @@ sw $t0, 0($s1)
 
 #combine moveHead and trimTail, taking WASD as a parameter
 .macro moveSnake (%dir)
-li $t0, %dir
+move $t0, %dir
 #check what the input was
 beq $t0, 'w', wCase
 beq $t0, 'a', aCase
@@ -133,84 +142,44 @@ trimTail
 exit:
 .end_macro 
 
-.macro sleep
-li $v0, 32
-la $a0, 200
-syscall
-.end_macro 
 .text
-
 main:
+#start keeping track of system time
+li $v0, 30
+syscall
+move $s3, $a0
 #screen stays in $s0
 la $s0, screen
 #starting the head at space 55
 addi $s1, $s0, 220
 #starting the tail at space 51
 addi $s2, $s0, 204
-
-#example for movement
-loop:
-moveSnake('d')
-drawScreen
-sleep
-moveSnake('d')
-drawScreen
-sleep
-moveSnake('d')
-drawScreen
-sleep
-moveSnake('d')
-drawScreen
-sleep
-moveSnake('w')
-drawScreen
-sleep
-moveSnake('a')
-drawScreen
-sleep
-moveSnake('w')
-drawScreen
-sleep
-moveSnake('a')
-drawScreen
-sleep
-moveSnake('a')
-drawScreen
-sleep
-moveSnake('a')
-drawScreen
-sleep
-moveSnake('a')
-drawScreen
-sleep
-moveSnake('a')
-drawScreen
-sleep
-moveSnake('a')
-drawScreen
-sleep
-moveSnake('s')
-drawScreen
-sleep
-moveSnake('a')
-drawScreen
-sleep
-moveSnake('s')
-drawScreen
-sleep
-moveSnake('d')
-drawScreen
-sleep
-moveSnake('d')
-drawScreen
-sleep
-moveSnake('d')
-drawScreen
-sleep
-moveSnake('d')
-drawScreen
-sleep
+li $s4, 'd'
 j loop
+
+#movement
+loop:
+li $v0, 30
+syscall
+subu $t2, $a0, $s3     
+
+#load keyboard control register
+lw $t0, 0xFFFF0000($zero)
+#check if there is a key
+andi $t0, $t0, 0x0001
+#if something was pressed, go to the method
+bgt $t0, $zero, changeDirection
+
+bltu $t2, 200, loop    
+move $s3, $a0          
+moveSnake($t3)
+drawScreen
+j loop
+
+changeDirection:
+lw $t3, 0xFFFF0004($zero)
+j loop
+
 
 exit:
 li $v0, 10
