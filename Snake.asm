@@ -45,6 +45,8 @@ loop:
 beq $t0, 320, end
 #print a new line every 16 digits 
 rem $t1, $t0, 32
+#skip if its the 0th space
+beqz $t0, newLineReturn
 beq $t1, 0, addLine
 #if a new line was added, it jumps back here
 newLineReturn:
@@ -62,23 +64,28 @@ j printBody
 #afterward, they both jump back to loop
 
 addLine:
+#character 10 = \n
 putChar(10)
-sw $t1, 0xffff000c($zero)
 j newLineReturn
 
 printBody:
+#prints an x
 putChar('x')
+#shifts s0 over to the next element
 addi $s0, $s0, 4
 j loop
 
 printFruit:
+#prints an o
 putChar('o')
+#shifts s0 over to the next element
 addi $s0, $s0, 4
 j loop
 
-#print a space to the MMIO display
 printSpace:
+#prints a space
 putChar(32)
+#shifts s0 over to the next element
 addi $s0, $s0, 4
 j loop
 
@@ -89,34 +96,48 @@ subi $s0, $s0, 1280
 .end_macro 
 
 .macro drawDeathScreen
+#wipe the display
 putChar(12)
-lui $t0, 0xffff      # Load base address 0xffff0000 into $t0
-    la  $s0, deathScreen            # Load pointer to string
-
-print_loop:
-    lb  $a0, 0($s0)         # Load next character from string
-    beq $a0, $zero, exit    # If null terminator (0), finish
-
-check_ready:
-    lw  $t1, 8($t0)         # Read transmitter control at 0xffff0008
-    andi $t1, $t1, 1        # Check ready bit (bit 0)
-    beq $t1, $zero, check_ready # If not ready, keep polling
-
-    sw  $a0, 12($t0)        # Write character to transmitter data at 0xffff000c
-    addiu $s0, $s0, 1       # Move to next character
-    j   print_loop
+#load the death screen to s0
+la  $s0, deathScreen
+#loop through s0 and print each char in order
+loop:
+#load the ascii value at each step of s0
+lb  $a0, 0($s0)
+#exit once the value is null
+beq $a0, $zero, exit
+#otherwise, wait for the display to be ready
+wait:
+#load the reciever control register
+lw  $t1, 0xffff0008($zero)   
+#mask everything but the first bit (ready or not)
+andi $t1, $t1, 1        
+#if it's not ready, keep waiting
+beq $t1, $zero, wait
+#now that it's ready, load the ascii value into the transmitter data register
+sw  $a0, 0xffff000c($zero) 
+#move to the next character
+addi $s0, $s0, 1
+#jump back
+j loop
 
 exit:
 .end_macro 
 
-#prints a character to the MMIO display, or clears the display
+#prints a character, or clears the display
 .macro putChar(%c)
-waitReady:
-lw   $t1, 0xffff0008($zero)
+#wait till the display is ready to print
+wait:
+#load the transmitter control register
+lw $t1, 0xffff0008($zero)
+#mask off anything but the first bit (ready or not)
 andi $t1, $t1, 1
-beqz $t1, waitReady
-li   $t1, %c
-sw   $t1, 0xffff000c($zero)
+#if its not ready, keep waiting
+beqz $t1, wait
+#now that it's ready, store the char in the transmitter data register
+li $t1, %c
+sw $t1, 0xffff000c($zero)
+#leave
 .end_macro
 
 #removes 1 tail, sets $s2 to the space it points to
@@ -169,19 +190,31 @@ li $t0, 0
 
 #places a fruit on a random empty space on the map
 .macro spawnFruit
+#picks a random space until its empty
 loop:
+#load a random integer
 li $v0, 42
+#set the upper bound to 321 (exclusive)
 li $a1, 321
 syscall
+#translate unit distance for registers
 mul $a0, $a0, 4
+#shift $s0 by a0 spaces
 add $s0, $s0, $a0
+#load the value at that register
 lw $t0, 0($s0)
+#shift s0 back a0 spaces
 sub $s0, $s0, $a0
+#if the character at that space isn't 0, try again
 bne $t0, 0, loop
-li $t0, 2
+#now that we know slot $a0 is free, shift $s0 back over there
 add $s0, $s0, $a0
+#store 2 in that register
+li $t0, 2
 sw $t0, 0($s0)
+#shift $s0 back to the first register
 sub $s0, $s0, $a0
+#leave
 .end_macro 
 
 
@@ -239,7 +272,7 @@ loop:
 #load the time since starting the program
 li $v0, 30
 syscall
-#load keyboard control register
+#load the reciever control register
 lw $t0, 0xFFFF0000($zero)
 #check if there is a key pressed (the first bit stores that)
 andi $t0, $t0, 0x0001
@@ -253,18 +286,26 @@ bltu $t2, 225, loop
 move $s3, $a0     
 
 #if 2 keypresses have come through since the last update, handle the old one first
+#if t1 is 1, there are 2 or more keypresses to process
+#if t1 doesnt equal 1, skip over to safeToMoveSnake
 bne $t1, 1, safeToMoveSnake
-li $t1, 0
+#otherwise, move with the older direction
 moveSnake($t4)
+#update the screen
 drawScreen
+#reset $t1 back to 0
+li $t1, 0
+#skip back up to handle the second value
 j loop
 
-#otherwise, move it in the new direction
+#if we're here, there's only one keypress to process
 safeToMoveSnake:
+#move in that direction
 moveSnake($t3)
-#save the last direction that was actually executed
-move $t4, $t3
+#update the screen
 drawScreen
+#save the last direction that was executed and drawn
+move $t4, $t3
 j loop
 
 changeDirection:
@@ -277,6 +318,7 @@ move $t4, $t3
 sameDir:
 #load the new keypress into $t0 to check if the input was valid
 #first, make sure the key is W,A,S, or D
+#load the reciever data register to $t0
 lw $t0, 0xFFFF0004($zero)
 beq $t0, 'w', keyOK
 beq $t0, 'a', keyOK
@@ -297,13 +339,14 @@ beq $t0, $t3, loop
 #pressing a after d
 addi $t0, $t0, 6
 beq $t0, $t3, loop
-#otherwise, the key press is valid, so update the direction in $t3
+#otherwise, the key press is valid, so update the direction from the reciever data in $t3
 lw $t3, 0xFFFF0004($zero)
 j loop
 
 
 death:
+#clear the game screen and print a death screen
 drawDeathScreen
-syscall
+#exit program
 li $v0, 10
 syscall
