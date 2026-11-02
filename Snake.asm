@@ -14,6 +14,7 @@
 #s1 - snake head's address
 #s2 - snake tail's address
 #s3 - time of last update
+#s4 - number of fruits eaten
 #t0 & t1 - temp values for all the macros
 #t2 - time elapsed since code began
 #t3 & t4 - user input direction
@@ -32,7 +33,7 @@ screen: .word
 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-deathScreen: .asciiz "\n\n\n\n\n             You Died"
+deathScreen: .asciiz "\n\n\n\n\n                 You Died\n             Your score was "
 
 #prints out the full grid with spaces for 0 and boxes for 1
 .macro drawScreen
@@ -120,8 +121,8 @@ sw  $a0, 0xffff000c($zero)
 addi $s0, $s0, 1
 #jump back
 j loop
-
 exit:
+#leave
 .end_macro 
 
 #prints a character, or clears the display
@@ -139,6 +140,59 @@ li $t1, %c
 sw $t1, 0xffff000c($zero)
 #leave
 .end_macro
+
+.macro putInt(%i)
+li $t1, -1
+li $t2, -1
+bgt %i, 99, printTripleDigit
+bgt %i, 9, printDoubleDigit
+j printSingleDigit
+
+printTripleDigit:
+rem $t2, %i, 100
+rem $t2, $t2, 10
+rem $t1, %i, 100
+div $t1, $t1, 10
+div $t0, %i, 100
+j go
+printDoubleDigit:
+rem $t1, %i, 10
+div $t0, %i, 10
+j go
+printSingleDigit:
+move $t0, %i
+
+go:
+#move on to printing stuff
+#wait until the transmitter is ready
+wait:
+#load transmitter control register
+lw $t3, 0xffff0008($zero)
+#mask off everything but the first bit (ready or not)
+andi $t3, $t3, 1
+#if its not ready, keep waiting
+beqz $t3, wait
+#once it is, store it in the transmitter data register
+addi $t0, $t0, 48
+sw $t0, 0xffff000c($zero)
+#if that was the only digit, leave
+beq $t1, -1, finalWait
+#otherwise repeat above for $t1
+move $t0, $t1 
+move $t1, $t2
+li $t2, -1
+j wait
+#wait again to make sure it gets printed
+finalWait:
+#again, load the transmitter control register
+lw $t1, 0xffff0008($zero)
+#mask everything but the first bit (ready or not)
+andi $t1, $t1, 1
+#if its not ready, keep waiting
+beqz $t1, finalWait
+#leave once its done
+exit:
+.end_macro 
 
 #removes 1 tail, sets $s2 to the space it points to
 .macro trimTail
@@ -177,9 +231,12 @@ lw $t0, 0($s1)
 bnez  $t0, death 
 #skip to here assuming it was a fruit
 eat:
-#call the spawnFruit macro if a fruit was just eaten
+#pass by unless it was a fruit
 bne $t0, 2, continue
+#otherwise spawn a new fruit somewhere else
 spawnFruit
+#increment fruits eaten
+addi $s4, $s4, 1
 continue:
 #put a placeholder value in the new head, so it still gets drawn
 li $t0, 1
@@ -253,6 +310,7 @@ moveHead($t0)
 exit:
 .end_macro 
 
+#-----------------------------------------------------------------------------------
 .text
 main:
 #start keeping track of system time
@@ -265,7 +323,10 @@ la $s0, screen
 addi $s1, $s0, 428
 #starting the tail at space 99
 addi $s2, $s0, 392
+#start the direction moving right
 li $t3, 'd'
+#start the number of fruits eaten at 0
+li $s4, 0
 
 #movement
 loop:
@@ -343,10 +404,11 @@ beq $t0, $t3, loop
 lw $t3, 0xFFFF0004($zero)
 j loop
 
-
 death:
 #clear the game screen and print a death screen
 drawDeathScreen
+#print the number of fruits eaten
+putInt($s4)
 #exit program
 li $v0, 10
 syscall
