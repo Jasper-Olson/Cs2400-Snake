@@ -142,24 +142,38 @@ sw $t1, 0xffff000c($zero)
 .end_macro
 
 .macro putInt(%i)
+#t1 and t2 hold second and third digits. 
+#if the number doesn't have a second/third digit, it's negative
 li $t1, -1
 li $t2, -1
+#if there's 3 digits, go to printTripleDigit
 bgt %i, 99, printTripleDigit
+#if there's 2 digits, go to printDoubleDigit
 bgt %i, 9, printDoubleDigit
+#otherwise go to printSingleDigit 
 j printSingleDigit
 
 printTripleDigit:
-rem $t2, %i, 100
-rem $t2, $t2, 10
+#t2 = i%10 = last digit
+rem $t2, %i, 10
+#t1 = i%100 / 10 = middle digit
 rem $t1, %i, 100
 div $t1, $t1, 10
+#t0 = i/100 = first digit
 div $t0, %i, 100
+#move to the printing step
 j go
+
+
 printDoubleDigit:
+#t1 = i%10 = second digit
 rem $t1, %i, 10
+#t0 = i / 10 = first digit
 div $t0, %i, 10
+#move to the printing step
 j go
 printSingleDigit:
+#load the int to t0
 move $t0, %i
 
 go:
