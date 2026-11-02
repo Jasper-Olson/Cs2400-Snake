@@ -193,8 +193,11 @@ sw $t0, 0xffff000c($zero)
 beq $t1, -1, finalWait
 #otherwise repeat above for $t1
 move $t0, $t1 
+#then load $t2 into slot t1 so it happens on the next call
 move $t1, $t2
+#reset t2 if necessary
 li $t2, -1
+#repeat till t1 is -1
 j wait
 #wait again to make sure it gets printed
 finalWait:
