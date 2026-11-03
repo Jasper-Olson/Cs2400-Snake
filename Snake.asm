@@ -23,7 +23,7 @@
 .data
 #holds all the info to draw what's happening
 screen: .word 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
@@ -33,6 +33,7 @@ screen: .word
 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+
 deathScreen: .asciiz "\n\n\n\n\n                 You Died\n             Your score was "
 
 #prints out the full grid with spaces for 0 and boxes for 1
@@ -55,7 +56,6 @@ newLineReturn:
 addi $t0, $t0, 1
 #load the value saved at s0
 lw $t1, 0($s0)
-li $v0, 11
 #print a space if its 0
 beq $t1, 0, printSpace
 #print fruit if its 2
@@ -130,8 +130,8 @@ exit:
 #wait till the display is ready to print
 wait:
 #load the transmitter control register
-lw $t1, 0xffff0008($zero)
-#mask off anything but the first bit (ready or not)
+lw $t1, 0xffff0008($zero) 
+#mask off anything but the first bit (ready or not) 
 andi $t1, $t1, 1
 #if its not ready, keep waiting
 beqz $t1, wait
@@ -143,7 +143,7 @@ sw $t1, 0xffff000c($zero)
 
 .macro putInt(%i)
 #t1 and t2 hold second and third digits. 
-#if the number doesn't have a second/third digit, it's negative
+#if the number doesn't have a second/third digit, they stay negative to indicate that
 li $t1, -1
 li $t2, -1
 #if there's 3 digits, go to printTripleDigit
@@ -162,22 +162,24 @@ div $t1, $t1, 10
 #t0 = i/100 = first digit
 div $t0, %i, 100
 #move to the printing step
-j go
+j wait
 
 
 printDoubleDigit:
+#5
 #t1 = i%10 = second digit
 rem $t1, %i, 10
 #t0 = i / 10 = first digit
 div $t0, %i, 10
 #move to the printing step
-j go
+j wait
+
+
 printSingleDigit:
 #load the int to t0
 move $t0, %i
 
-go:
-#move on to printing stuff
+
 #wait until the transmitter is ready
 wait:
 #load transmitter control register
@@ -336,9 +338,9 @@ syscall
 move $s3, $a0
 #screen stays in $s0
 la $s0, screen
-#starting the head at space 103
+#starting the head at space 107
 addi $s1, $s0, 428
-#starting the tail at space 99
+#starting the tail at space 98
 addi $s2, $s0, 392
 #start the direction moving right
 li $t3, 'd'
@@ -359,7 +361,7 @@ bgt $t0, $zero, changeDirection
 #loop back to the top if not enough time has passed
 subu $t2, $a0, $s3  
 #step speed
-bltu $t2, 225, loop
+bltu $t2, 175, loop
 #now that we're ready, update $s3 to mark this timestamp
 move $s3, $a0     
 
@@ -398,7 +400,7 @@ sameDir:
 #first, make sure the key is W,A,S, or D
 #load the reciever data register to $t0
 lw $t0, 0xFFFF0004($zero)
-beq $t0, 'w', keyOK
+beq $t0, 'w', keyOK    
 beq $t0, 'a', keyOK
 beq $t0, 's', keyOK
 beq $t0, 'd', keyOK
