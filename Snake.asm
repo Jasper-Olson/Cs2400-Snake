@@ -35,7 +35,7 @@ screen: .word
 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 deathScreen: .asciiz "\n\n\n\n\n                 You Died\n             Your score was "
 
-mainMenu: .asciiz "Hello! Welcome to Snake in Assembly! Please select 1 to start or 2 to go to options to get started!"
+mainMenu: .asciiz "\n\n\n\n\n Hello! Welcome to Snake in Assembly!\n Please select 1 to start or 2 to go to options to get started!"
 options: .asciiz "You have selected the menu Option, you can change the speed of the snake to make things harder or easier for you!\nPlease enter 1 for easy mode, 2 for normal mode, and 3 for normal mode. If you would like to go back, please enter 4."
 
 
@@ -129,6 +129,22 @@ wait:
 exit:
 	#leave
 .end_macro 
+
+.macro drawMainMenu
+	#load the main menu
+	la $s0, mainMenu
+loop: 
+	lb $a0, 0($s0) #load byte into $a0, from the offset(base address(screen))
+	beq $a0, $zero, exit #exit once value is null just like death screen
+wait:
+	lw $t1, 0xffff0008($zero)
+	andi $t1, $t1, 1
+	beq $t1, $zero, wait
+	sw $a0, 0xffff000c($zero)
+	addi $s0, $s0, 1
+	j loop
+exit:
+.end_macro
 
 #prints a character, or clears the display
 .macro putChar(%c)
@@ -332,23 +348,15 @@ next:
 exit:
 .end_macro 
 
-.macro optionsMenu
-	
-
-.end_macro
 
 #-----------------------------------------------------------------------------------
 .text
 main:
-	#main menu
-	li $v0, 4
-	la $a0, mainMenu
-	syscall
-	li $v0, 5
-	syscall
-	move $t5, $v0
-	beq $t5, 1, start
-	beq $t5, 2, option
+	drawMainMenu
+	#get input
+	#if select option, go to settings
+	#otherwise, go to start
+	
 	
 start:
 	#start keeping track of system time
