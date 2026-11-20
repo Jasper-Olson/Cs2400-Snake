@@ -132,6 +132,7 @@ exit:
 
 .macro drawMainMenu
 	#load the main menu
+	putChar(12)
 	la $s0, mainMenu
 loop: 
 	lb $a0, 0($s0) #load byte into $a0, from the offset(base address(screen))
@@ -144,6 +145,21 @@ wait:
 	addi $s0, $s0, 1
 	j loop
 exit:
+.end_macro
+
+.macro drawOption
+	putChar(12)
+	la $s0, options
+loop: 
+	lb $a0, 0($s0) #load byte into $a0, from the offset(base address(screen))
+	beq $a0, $zero, exit #exit once value is null just like death screen
+wait:
+	lw $t1, 0xffff0008($zero)
+	andi $t1, $t1, 1
+	beq $t1, $zero, wait
+	sw $a0, 0xffff000c($zero)
+	addi $s0, $s0, 1
+	j loop
 .end_macro
 
 #prints a character, or clears the display
@@ -348,16 +364,42 @@ next:
 exit:
 .end_macro 
 
+.macro Options(%int)
+	move $t0, %int
+	beq $t0, 1, easy
+	beq $t0, 2, normal
+	beq $t0, 3, hard
+	blt $t0, 1, error
+	bgt $t0, 4, error
+easy:
+
+normal:
+
+hard:
+
+error:
+
+exit:
+.end_macro
 
 #-----------------------------------------------------------------------------------
 .text
 main:
 	drawMainMenu
 	#get input
+	lw $t5, 0xFFFF0004($zero)
+	beq $t5, 's', start
+	beq $t5, 'o', 
 	#if select option, go to settings
 	#otherwise, go to start
 	
+option:
+	drawOptions
+	lw $t5, 0xFFFF0004($zero)
+	beq $t5, 4, main
+	Options($t5)
 	
+
 start:
 	#start keeping track of system time
 	li $v0, 30
