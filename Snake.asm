@@ -422,6 +422,10 @@ errorOp:
 	
 
 start:
+	#reset to zero
+	move $t0, $zero
+	move $t1, $zero
+	
 	#start keeping track of system time
 	li $v0, 30
 	syscall
