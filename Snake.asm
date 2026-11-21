@@ -36,7 +36,7 @@ screen: .word
 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 deathScreen: .asciiz "\n\n\n\n\n                 You Died\n             Your score was "
 
-mainMenu: .asciiz "\n\n\n\n\n Hello! Welcome to Snake in Assembly!\n Please select 1 to start or 2 to go to options to get started!"
+mainMenu: .asciiz "\n\n\n\n\n Hello! Welcome to Snake in Assembly!\n Please select 's' to start or 'o' to go to options to get started!"
 options: .asciiz "You have selected the menu Option, you can change the speed of the snake to make things harder or easier for you!\nPlease enter 1 for easy mode, 2 for normal mode, and 3 for normal mode. If you would like to go back, please enter 4."
 error: .asciiz "Error: Not an option is selected, please try again."
 
@@ -44,9 +44,9 @@ error: .asciiz "Error: Not an option is selected, please try again."
 #prints out the full grid with spaces for 0 and boxes for 1
 .macro drawScreen
 #reset t0 because it gets overridden all over the place
-li $t0, 0
+	li $t0, 0
 #reset the previous screen drawn in the MMIO display
-putChar(12)
+	putChar(12)
 loop: 
 	#exit after traversing the array
 	beq $t0, 320, end
@@ -392,7 +392,14 @@ exit:
 main:
 	drawMainMenu
 	#get input
-	lw optionSelect, 0xFFFF0004($zero)
+	lui $t0, 0xffff
+test:
+	lw $t1, 0($t0)
+	andi $t1, $t1, 0x0001
+	beq $t1, $zero, test
+	lw $a0, 4($t0)
+cont:
+	move optionSelect, $a0
 	beq optionSelect, 's', start
 	beq optionSelect, 'o', option
 	#if select option, go to settings
@@ -401,7 +408,8 @@ main:
 option:
 	drawOption
 loopOption:
-	lw optionSelect, 0xFFFF0004($zero)
+
+	lw optionSelect, 0xFFFF0004($t0)
 	beq optionSelect, 4, main
 	blt optionSelect, 1, errorOp
 	bgt optionSelect, 4, errorOp
