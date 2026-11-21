@@ -18,6 +18,7 @@
 #t0 & t1 - temp values for all the macros
 #t2 - time elapsed since code began
 #t3 & t4 - user input direction
+.eqv optionSelect $t5
 
 
 .data
@@ -37,7 +38,7 @@ deathScreen: .asciiz "\n\n\n\n\n                 You Died\n             Your sco
 
 mainMenu: .asciiz "\n\n\n\n\n Hello! Welcome to Snake in Assembly!\n Please select 1 to start or 2 to go to options to get started!"
 options: .asciiz "You have selected the menu Option, you can change the speed of the snake to make things harder or easier for you!\nPlease enter 1 for easy mode, 2 for normal mode, and 3 for normal mode. If you would like to go back, please enter 4."
-
+error: .asciiz "Error: Not an option is selected, please try again."
 
 
 #prints out the full grid with spaces for 0 and boxes for 1
@@ -160,6 +161,8 @@ wait:
 	sw $a0, 0xffff000c($zero)
 	addi $s0, $s0, 1
 	j loop
+	
+exit:
 .end_macro
 
 #prints a character, or clears the display
@@ -365,20 +368,22 @@ exit:
 .end_macro 
 
 .macro Options(%int)
+
+.data
+easy: .asciiz "You have selected easy mode, speed 1."
+normal: .asciiz "You have selected normal mode, speed 2."
+hard: .asciiz "You have selected hard mode, speed 3."
+.text
 	move $t0, %int
-	beq $t0, 1, easy
-	beq $t0, 2, normal
-	beq $t0, 3, hard
-	blt $t0, 1, error
-	bgt $t0, 4, error
-easy:
-
-normal:
-
-hard:
-
-error:
-
+	beq $t0, 1, easySp
+	beq $t0, 2, normalSp
+	beq $t0, 3, hardSp
+easySp:
+	j exit
+normalSp:
+	j exit
+hardSp:
+	j exit
 exit:
 .end_macro
 
@@ -387,17 +392,25 @@ exit:
 main:
 	drawMainMenu
 	#get input
-	lw $t5, 0xFFFF0004($zero)
-	beq $t5, 's', start
-	beq $t5, 'o', 
+	lw optionSelect, 0xFFFF0004($zero)
+	beq optionSelect, 's', start
+	beq optionSelect, 'o', option
 	#if select option, go to settings
 	#otherwise, go to start
 	
 option:
-	drawOptions
-	lw $t5, 0xFFFF0004($zero)
-	beq $t5, 4, main
-	Options($t5)
+	drawOption
+loopOption:
+	lw optionSelect, 0xFFFF0004($zero)
+	beq optionSelect, 4, main
+	blt optionSelect, 1, errorOp
+	bgt optionSelect, 4, errorOp
+	Options(optionSelect)
+errorOp:
+	li $v0, 4
+	la $a0, error
+	syscall
+	j loopOption
 	
 
 start:
