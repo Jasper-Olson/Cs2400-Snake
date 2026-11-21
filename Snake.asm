@@ -162,12 +162,12 @@ sw $t1, 0xffff000c($zero)
 	#'x' - x
 	#'o' - o
 	#32 - blank	
-li $t0, %c	#this is the character we care about
-beq $t0, 12, resetScr
-beq $t0, 10, nextBitmapLine
-beq $t0, 120, snakeGreen
-beq $t0, 111, appleRed
-beq $t0, 32, blankSquare
+li $t1, %c	#this is the character we care about
+beq $t1, 12, resetScr
+beq $t1, 10, nextBitmapLine
+beq $t1, 120, snakeGreen
+beq $t1, 111, appleRed
+beq $t1, 32, blankSquare
 
 #oh! we branched nowhere. dangit.
 error:
@@ -197,6 +197,7 @@ blankSquare:
 draw_dot(1)
 
 end_bitmap_draw:
+	li $t1, 0
 #leave
 .end_macro
 
@@ -411,18 +412,16 @@ exit:
 	#Memory Address = 0x10040000 + 4x + (4y * 32)
 	
 	#x-value:
-	move $t0, $s5
-	mul $t0, $t0, 4		#just *4 here because it's a word 
-	add $v0, $v0, $t0
+	move $t1, $s5
+	mul $t1, $t1, 4		#just *4 here because it's a word 
+	add $v0, $v0, $t1
 	
 	#y-value:
-	move $t0, $s6
-	mul $t0, $t0, 128	#128 = 4 * 32, since we have a 32 * 16 grid
-	add $v0, $v0, $t0
+	move $t1, $s6
+	mul $t1, $t1, 128	#128 = 4 * 32, since we have a 32 * 16 grid
+	add $v0, $v0, $t1
 	
 	#$v0 is now the address :D
-	
-	li $t0, 0
 .end_macro
 
 
@@ -438,23 +437,21 @@ exit:
 	#green (3)
 	#red (4)
 .macro calculate_color(%colorInt)
-	li $t0, %colorInt
-	ble $t0, 0, error
-	bgt $t0, 4, error
+	li $t1, %colorInt
+	ble $t1, 0, error
+	bgt $t1, 4, error
 	
 	j noError
 	
 	error:
-		li $t0, 0	#print blue (0) if error
+		li $t1, 0	#print blue (0) if error
 	noError:
 		la $v1, ColorTable	#load the base address of colors
 	
-		mul $t0, $t0, 4		#align to word
-		add $v1, $v1, $t0
+		mul $t1, $t1, 4		#align to word
+		add $v1, $v1, $t1
 	
 		lw $v1, 0($v1)
-	
-	li $t0, 0
 	#exit
 .end_macro
 
@@ -519,7 +516,17 @@ exit:
 
 #read the macro name thats what it does
 .macro clearBitmapScreen
-	#make this work
+	resBitmap
+	li $t0, 0
+	loop:
+		beq $t0, 320, bitmap_cleared
+		draw_dot(1)
+		incBitmap
+	
+	
+	bitmap_cleared:
+		resBitmap
+		#end
 .end_macro
 
 #-----------------------------------------------------------------------------------
