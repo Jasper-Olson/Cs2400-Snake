@@ -15,6 +15,8 @@
 #s2 - snake tail's address
 #s3 - time of last update
 #s4 - number of fruits eaten
+#s5 - current x position in relation to characters (bitmap display)
+#s6 - current y position in relation to characters (bitmap display)
 #t0 & t1 - temp values for all the macros
 #t2 - time elapsed since code began
 #t3 & t4 - user input direction
@@ -35,6 +37,14 @@ screen: .word
 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 
 deathScreen: .asciiz "\n\n\n\n\n                 You Died\n             Your score was "
+
+ColorTable:
+	.word 0x0000FF #blue (0)
+	.word 0x000000 #black (1)
+	.word 0xFFFFFF #white (2)
+	.word 0x00FF00 #green (3)
+	.word 0xFF0000 #red (4)
+	
 
 #prints out the full grid with spaces for 0 and boxes for 1
 .macro drawScreen
@@ -74,6 +84,7 @@ printBody:
 putChar('x')
 #shifts s0 over to the next element
 addi $s0, $s0, 4
+incBitmap
 j loop
 
 printFruit:
@@ -81,6 +92,7 @@ printFruit:
 putChar('o')
 #shifts s0 over to the next element
 addi $s0, $s0, 4
+incBitmap
 j loop
 
 printSpace:
@@ -88,19 +100,22 @@ printSpace:
 putChar(32)
 #shifts s0 over to the next element
 addi $s0, $s0, 4
+incBitmap
 j loop
 
 end:
 #shift s0 back to its starting register
 subi $s0, $s0, 1280
+resBitmap
 #exit
 .end_macro 
 
 .macro drawDeathScreen
 #wipe the display
+clearBitmapScreen
 putChar(12)
 #load the death screen to s0
-la  $s0, deathScreen
+la $s0, deathScreen
 #loop through s0 and print each char in order
 loop:
 #load the ascii value at each step of s0
@@ -138,6 +153,50 @@ beqz $t1, wait
 #now that it's ready, store the char in the transmitter data register
 li $t1, %c
 sw $t1, 0xffff000c($zero)
+
+
+#BIIIIITMAP TIIIIIIIIIIIIIIIIIIIME
+#character info:
+	#12- reset screen
+	#10 - \n
+	#'x' - x
+	#'o' - o
+	#32 - blank	
+li $t0, %c	#this is the character we care about
+beq $t0, 12, resetScr
+beq $t0, 10, nextBitmapLine
+beq $t0, 120, snakeGreen
+beq $t0, 111, appleRed
+beq $t0, 32, blankSquare
+
+#oh! we branched nowhere. dangit.
+error:
+	draw_dot(0)
+	j end_bitmap_draw
+
+resetScr:
+	clearBitmapScreen
+	j end_bitmap_draw
+
+nextBitmapLine:
+	incBitmapLine
+	j end_bitmap_draw
+
+snakeGreen:
+	draw_dot(3)
+	j end_bitmap_draw
+
+appleRed:
+	draw_dot(4)
+	j end_bitmap_draw
+
+blankSquare:
+	draw_dot(1)
+	j end_bitmap_draw
+
+draw_dot(1)
+
+end_bitmap_draw:
 #leave
 .end_macro
 
@@ -328,6 +387,140 @@ moveHead($t0)
 #leave
 exit:
 .end_macro 
+
+#-----------------------------------------------------------------------------------
+
+#START OF BITMAP DISPLAY MACROS!!!!!!!!!!!!!!
+#Base display address uses heap (0x10040000)
+#Make sure bitmap display is connected to mips and uses the following settings:
+#Unit Witdth: 16
+#Unit Height: 16
+#Display Width: 512
+#Display Height: 256
+#Base address for display: 0x10040000 (heap)
+
+
+#calculates the address of the location given (in x/y) and sets $v0 to the memory address of
+#the bitmap display location of those x/y coordinates
+#returns:
+#$v0 - becomes new address
+.macro calculate_address
+	#Heap address
+	li $v0, 0x10040000	#base address
+	
+	#Memory Address = 0x10040000 + 4x + (4y * 32)
+	
+	#x-value:
+	move $t0, $s5
+	mul $t0, $t0, 4		#just *4 here because it's a word 
+	add $v0, $v0, $t0
+	
+	#y-value:
+	move $t0, $s6
+	mul $t0, $t0, 128	#128 = 4 * 32, since we have a 32 * 16 grid
+	add $v0, $v0, $t0
+	
+	#$v0 is now the address :D
+	
+	li $t0, 0
+.end_macro
+
+
+#calculates the color address of the color given (through the int %color) and sets $v1 to the color address
+#that bitmap uses to display colors
+#returns:
+#$v1 - becomes bitmap color 
+
+#colors:
+	#blue (0) / error / all wrong inputs
+	#black (1)
+	#white (2)
+	#green (3)
+	#red (4)
+.macro calculate_color(%colorInt)
+	li $t0, %colorInt
+	ble $t0, 0, error
+	bgt $t0, 4, error
+	
+	j noError
+	
+	error:
+		li $t0, 0	#print blue (0) if error
+	noError:
+		la $v1, ColorTable	#load the base address of colors
+	
+		mul $t0, $t0, 4		#align to word
+		add $v1, $v1, $t0
+	
+		lw $v1, 0($v1)
+	
+	li $t0, 0
+	#exit
+.end_macro
+
+
+#draws a dot at (%x, %y) of color %colorInt on the bitmap
+#colors:
+	#blue (0) / error / all wrong inputs
+	#black (1)
+	#white (2)
+	#green (3)
+	#red (4)
+.macro draw_dot(%colorInt)
+	#$a0 - x
+	#$a1 - y (heap addresses)
+	calculate_address()	#Calculates the location of the dot (finds its heap address)
+	
+	calculate_color(%colorInt)
+	
+	#all error cases (can't draw past the screen's size)
+	blt $a0, 0, finishedDrawing
+	blt $a1, 0, finishedDrawing
+	bgt $a0, 31, finishedDrawing
+	bgt $a1, 15, finishedDrawing
+	
+	sw $v1, 0($v0)
+	
+	finishedDrawing:
+		#exits
+.end_macro
+
+
+#stands for increment Bitmap
+#increments $s5 and $s6, the x/y variables for the bitmap so that the "stack" of characters can
+#have an actual x/y coordinate
+.macro incBitmap
+	addi $s5, $s5, 1
+	blt $s5, 32, finsihed_increment		#if the increment is less than the screen width, we're good
+	
+	addi $s6, $s6, 1				#otherwise that means we have to reset the x value and increment the y value
+	li $s5, 0
+	
+	finsihed_increment:
+.end_macro
+
+#increments the bitmap line
+#increments $s6, the y variable for the bitmap so that the "stack" of characters can
+#have an actual x/y coordinate
+#auto-sets x to 0 (important!!!!)
+.macro incBitmapLine
+	addi $s6, $s6, 1
+	li $s5, 0
+	
+	#end
+.end_macro
+
+#stands for reset Bitmap
+#doesn't actually reset the bitmap, but resets it's x/y coordinate positions
+.macro resBitmap
+	li $s5, 0
+	li $s6, 0
+.end_macro
+
+#read the macro name thats what it does
+.macro clearBitmapScreen
+	#make this work
+.end_macro
 
 #-----------------------------------------------------------------------------------
 .text
