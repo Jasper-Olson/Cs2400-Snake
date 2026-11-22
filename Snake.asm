@@ -19,7 +19,9 @@
 #t2 - time elapsed since code began
 #t3 & t4 - user input direction
 .eqv optionSelect $t5
+.eqv baseAddress 0xffff0000
 
+.include "macrosSnake.asm"
 
 .data
 #holds all the info to draw what's happening
@@ -36,9 +38,12 @@ screen: .word
 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 deathScreen: .asciiz "\n\n\n\n\n                 You Died\n             Your score was "
 
-mainMenu: .asciiz "\n\n\n\n\n Hello! Welcome to Snake in Assembly!\n Please select 's' to start or 'o' to go to options to get started!"
-options: .asciiz "You have selected the menu Option, you can change the speed of the snake to make things harder or easier for you!\nPlease enter 1 for easy mode, 2 for normal mode, and 3 for normal mode. If you would like to go back, please enter 4."
-error: .asciiz "Error: Not an option is selected, please try again."
+mainMenu: .asciiz "\n\n\n\n\nHello! Welcome to Snake in Assembly!\n Please select 's' to start or 'o' to go to options to get started!"
+options: .asciiz "\n\n\nYou have selected the menu Option, \nyou can change the speed of the snake to make things harder or easier for you!\nPlease enter 'e' for easy mode, 'n' for normal mode, and 'h' for hard mode. \nIf you would like to go back, please enter 'b'."
+error: .asciiz "n\n\n\nError: Not an option is selected, please try again."
+easy: .asciiz "\n\n\nYou have selected easy. Press 'c' to continue."
+normal: .asciiz "\n\n\nYou have selected normal. Press 'c' to continue."
+hard: .asciiz "\n\n\nYou have selected hard. Press 'c' to continue"
 
 
 #prints out the full grid with spaces for 0 and boxes for 1
@@ -368,22 +373,46 @@ exit:
 .end_macro 
 
 .macro Options(%int)
-
-.data
-easy: .asciiz "You have selected easy mode, speed 1."
-normal: .asciiz "You have selected normal mode, speed 2."
-hard: .asciiz "You have selected hard mode, speed 3."
-.text
 	move $t0, %int
-	beq $t0, 1, easySp
-	beq $t0, 2, normalSp
-	beq $t0, 3, hardSp
+	beq $t0, 'e', easySp
+	beq $t0, 'n', normalSp
+	beq $t0, 'h', hardSp
 easySp:
-	j exit
+	putChar(12)
+	printInMMIO(easy)
+easyloop:
+	lui $t0, 0xffff
+	lw $t1, 0($t0)
+	andi $t1, $t1, 0x0001
+	beq $t1, $zero, easyloop
+	lw $a0, 4($t0)
+	move optionSelect, $a0
+	beq optionSelect, 'c', exit
+	j easyloop
 normalSp:
-	j exit
+	putChar(12)
+	printInMMIO(normal)
+normalloop:
+	lui $t0, 0xffff
+	lw $t1, 0($t0)
+	andi $t1, $t1, 0x0001
+	beq $t1, $zero, normalloop
+	lw $a0, 4($t0)
+	move optionSelect, $a0
+	beq $a0, 'c', exit
+	j normalSp
 hardSp:
-	j exit
+	putChar(12)
+	printInMMIO(hard)
+hardloop:
+	lui $t0, 0xffff
+	lw $t1, 0($t0)
+	andi $t1, $t1, 0x0001
+	beq $t1, $zero, hardloop
+	lw $a0, 4($t0)
+	move optionSelect, $a0
+	beq $a0, 'c', exit
+	j hardSp
 exit:
 .end_macro
 
@@ -408,19 +437,19 @@ cont:
 option:
 	drawOption
 loopOption:
-
-	lw optionSelect, 0xFFFF0004($t0)
-	beq optionSelect, 4, main
-	blt optionSelect, 1, errorOp
-	bgt optionSelect, 4, errorOp
+	lw $t1, 0($t0)
+	andi $t1, $t1, 0x0001
+	beq $t1, $zero, loopOption
+	lw $a0, 4($t0)
+	move optionSelect, $a0
+	beq optionSelect, 'b', main
 	Options(optionSelect)
+	j errorOp
 errorOp:
-	li $v0, 4
-	la $a0, error
-	syscall
-	j loopOption
+	printInMMIO(error)
+	j option
 	
-
+#----------------------ACTUAL SNAKE GAME-------------------------#
 start:
 	#reset to zero
 	move $t0, $zero
