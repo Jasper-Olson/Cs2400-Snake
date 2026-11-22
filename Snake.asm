@@ -45,9 +45,19 @@ ColorTable:
 	.word 0x00FF00 #green (3)
 	.word 0xFF0000 #red (4)
 	
+#prints out the string %str
+.macro printStr(%str)
+	.data
+	stringLabel: .asciiz %str
+	.text 
+	li $v0, 4
+	la $a0, stringLabel
+	syscall
+.end_macro
 
 #prints out the full grid with spaces for 0 and boxes for 1
 .macro drawScreen
+draw_dot(2)
 #reset t0 because it gets overridden all over the place
 li $t0, 0
 #reset the previous screen drawn in the MMIO display
@@ -142,6 +152,7 @@ exit:
 
 #prints a character, or clears the display
 .macro putChar(%c)
+draw_dot(0)
 #wait till the display is ready to print
 wait:
 #load the transmitter control register
@@ -153,7 +164,6 @@ beqz $t1, wait
 #now that it's ready, store the char in the transmitter data register
 li $t1, %c
 sw $t1, 0xffff000c($zero)
-
 
 #BIIIIITMAP TIIIIIIIIIIIIIIIIIIIME
 #character info:
@@ -418,7 +428,7 @@ exit:
 	
 	#y-value:
 	move $t1, $s6
-	mul $t1, $t1, 128	#128 = 4 * 32, since we have a 32 * 16 grid
+	mul $t1, $t1, 128	#128 = 4 * 32, since we have a 32 * 12 grid
 	add $v0, $v0, $t1
 	
 	#$v0 is now the address :D
@@ -464,8 +474,8 @@ exit:
 	#green (3)
 	#red (4)
 .macro draw_dot(%colorInt)
-	#$a0 - x
-	#$a1 - y (heap addresses)
+	#$s5 - x
+	#$s6 - y 
 	calculate_address()	#Calculates the location of the dot (finds its heap address)
 	
 	calculate_color(%colorInt)
@@ -474,7 +484,7 @@ exit:
 	blt $a0, 0, finishedDrawing
 	blt $a1, 0, finishedDrawing
 	bgt $a0, 31, finishedDrawing
-	bgt $a1, 15, finishedDrawing
+	bgt $a1, 11, finishedDrawing
 	
 	sw $v1, 0($v0)
 	
@@ -488,12 +498,16 @@ exit:
 #have an actual x/y coordinate
 .macro incBitmap
 	addi $s5, $s5, 1
-	blt $s5, 32, finsihed_increment		#if the increment is less than the screen width, we're good
+	blt $s5, 32, finished_increment		#if the increment is less than the screen width, we're good
 	
-	addi $s6, $s6, 1				#otherwise that means we have to reset the x value and increment the y value
+	addi $s6, $s6, 1			#otherwise that means we have to reset the x value and increment the y value
 	li $s5, 0
+	blt $s6, 12, finished_increment		#if the y value is greater than the screen height, also reset it
+	li $s6, 0
 	
-	finsihed_increment:
+	draw_dot(0)
+	
+	finished_increment:
 .end_macro
 
 #increments the bitmap line
@@ -571,6 +585,7 @@ move $s3, $a0
 bne $t1, 1, safeToMoveSnake
 #otherwise, move with the older direction
 moveSnake($t4)
+draw_dot(0)
 #update the screen
 drawScreen
 #reset $t1 back to 0
