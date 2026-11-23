@@ -19,6 +19,7 @@
 #t2 - time elapsed since code began
 #t3 & t4 - user input direction
 .eqv optionSelect $t5
+.eqv speed $t6
 .eqv baseAddress 0xffff0000
 
 .include "macrosSnake.asm"
@@ -44,7 +45,7 @@ error: .asciiz "n\n\n\nError: Not an option is selected, please try again."
 easy: .asciiz "\n\n\nYou have selected easy. Press 'c' to continue."
 normal: .asciiz "\n\n\nYou have selected normal. Press 'c' to continue."
 hard: .asciiz "\n\n\nYou have selected hard. Press 'c' to continue"
-
+time: .byte 30
 
 #prints out the full grid with spaces for 0 and boxes for 1
 .macro drawScreen
@@ -380,6 +381,7 @@ exit:
 easySp:
 	putChar(12)
 	printInMMIO(easy)
+	li $t6, 225
 easyloop:
 	lui $t0, 0xffff
 	lw $t1, 0($t0)
@@ -392,6 +394,7 @@ easyloop:
 normalSp:
 	putChar(12)
 	printInMMIO(normal)
+	li $t6, 175
 normalloop:
 	lui $t0, 0xffff
 	lw $t1, 0($t0)
@@ -404,6 +407,7 @@ normalloop:
 hardSp:
 	putChar(12)
 	printInMMIO(hard)
+	li $t6, 110
 hardloop:
 	lui $t0, 0xffff
 	lw $t1, 0($t0)
@@ -484,7 +488,7 @@ loop:
 	#loop back to the top if not enough time has passed
 	subu $t2, $a0, $s3  
 	#step speed
-	bltu $t2, 225, loop
+	bltu $t2, $t6, loop
 	#now that we're ready, update $s3 to mark this timestamp
 	move $s3, $a0     
 	
