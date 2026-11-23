@@ -23,16 +23,22 @@
 .data
 #holds all the info to draw what's happening
 screen: .word 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 
 deathScreen: .asciiz "\n\n\n\n\n                 You Died\n             Your score was "
 
@@ -44,57 +50,74 @@ li $t0, 0
 putChar(12)
 loop: 
 #exit after traversing the array
-beq $t0, 320, end
-#print a new line every 16 digits 
-rem $t1, $t0, 32
-#skip if its the 0th space
-beqz $t0, newLineReturn
-beq $t1, 0, addLine
-#if a new line was added, it jumps back here
-newLineReturn:
-#iterate t0
-addi $t0, $t0, 1
+beq $t0, 512, end
 #load the value saved at s0
 lw $t1, 0($s0)
 #print a space if its 0
-beq $t1, 0, printSpace
+beq $t1, 0, printBlack
 #print fruit if its 2
 beq $t1, 2, printFruit
+#print a wall if its 3
+beq $t1 3, printWall
 #print body symbol otherwise
 j printBody
-#afterward, they both jump back to loop
 
-addLine:
-#character 10 = \n
-putChar(10)
-j newLineReturn
-
-printBody:
-#prints an x
-putChar('x')
+printWall:
+#prints a grey pixel
+putPix(0x8c8c8c)
 #shifts s0 over to the next element
 addi $s0, $s0, 4
+#iterate t0
+addi $t0, $t0, 1
+j loop
+
+printBody:
+#prints a green pixel
+putPix(0x00ff00)
+#shifts s0 over to the next element
+addi $s0, $s0, 4
+#iterate t0
+addi $t0, $t0, 1
 j loop
 
 printFruit:
-#prints an o
-putChar('o')
+#prints a red pixel
+putPix(0xff0000)
 #shifts s0 over to the next element
 addi $s0, $s0, 4
+#iterate t0
+addi $t0, $t0, 1
 j loop
 
-printSpace:
-#prints a space
-putChar(32)
+printBlack:
+#prints a blackk pixel
+putPix(0x00000000)
 #shifts s0 over to the next element
 addi $s0, $s0, 4
+#iterate t0
+addi $t0, $t0, 1
 j loop
 
 end:
 #shift s0 back to its starting register
-subi $s0, $s0, 1280
+subi $s0, $s0, 2048
 #exit
 .end_macro 
+
+.macro putPix(%color) 
+# $t1 stores the base address for display
+li $t1, 0x10008000
+#adjust t0 to pixel size
+mul $t0, $t0, 4
+#shift the base adress to the current pixel	
+add $t1, $t1, $t0
+#fix t0 to keep using for counter
+div $t0, $t0, 4
+#color that pixel whichever color that needs to be
+li $t2, %color
+sw $t2, 0($t1)
+.end_macro 
+
 
 .macro drawDeathScreen
 #wipe the display
@@ -178,7 +201,6 @@ j wait
 printSingleDigit:
 #load the int to t0
 move $t0, %i
-
 
 #wait until the transmitter is ready
 wait:
