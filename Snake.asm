@@ -10,8 +10,8 @@
 
 
 #adresses occupied:
-#s0  - address 0 of the screen
-#s1 - snake head's address
+.eqv screenAddress $s0 #s0  - address 0 of the screen
+.eqv snakeHead $s1 #s1 - snake head's address
 #s2 - snake tail's address
 #s3 - time of last update
 #s4 - number of fruits eaten
@@ -21,6 +21,7 @@
 .eqv optionSelect $t5
 .eqv speed $t6
 .eqv baseAddress 0xffff0000
+
 
 .include "macrosSnake.asm"
 
@@ -45,7 +46,6 @@ error: .asciiz "n\n\n\nError: Not an option is selected, please try again."
 easy: .asciiz "\n\n\nYou have selected easy. Press 'c' to continue."
 normal: .asciiz "\n\n\nYou have selected normal. Press 'c' to continue."
 hard: .asciiz "\n\n\nYou have selected hard. Press 'c' to continue"
-time: .byte 30
 
 #prints out the full grid with spaces for 0 and boxes for 1
 .macro drawScreen
@@ -381,7 +381,7 @@ exit:
 easySp:
 	putChar(12)
 	printInMMIO(easy)
-	li $t6, 225
+	li speed, 225
 easyloop:
 	lui $t0, 0xffff
 	lw $t1, 0($t0)
@@ -394,7 +394,7 @@ easyloop:
 normalSp:
 	putChar(12)
 	printInMMIO(normal)
-	li $t6, 175
+	li speed, 175
 normalloop:
 	lui $t0, 0xffff
 	lw $t1, 0($t0)
@@ -407,7 +407,7 @@ normalloop:
 hardSp:
 	putChar(12)
 	printInMMIO(hard)
-	li $t6, 110
+	li speed, 110
 hardloop:
 	lui $t0, 0xffff
 	lw $t1, 0($t0)
@@ -422,6 +422,7 @@ exit:
 
 #-----------------------------------------------------------------------------------
 .text
+	li speed, 225
 main:
 	drawMainMenu
 	#get input
