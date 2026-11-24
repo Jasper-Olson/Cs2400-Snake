@@ -1,12 +1,23 @@
 #CS2640
 #Jasper Olson, Kimberly Bui, Lily Konefat, Maxwell Severson, Sean Ayuby
 
+
 #-----------------------IMPORTANT NOTE-----------------------------
 # This code uses the Keyboard and Display MMIO Simulator for I/O, *NOT* the console at the bottom of the screen
 # TO RUN THIS CODE, GO TO TOOLS -> KEYBOARD AND DISPLAY MMIO SIMULATOR AND PRESS CONNECT TO MIPS IN THE BOTTOM LEFT CORNER
 # THEN YOU CAN ASSEMBLE, PRESS RUN, PRESS RESET ON THE MMIO PAGE, AND TYPE THE WASD CONTROLS IN THE BOTTOM FIELD
 # WHEN YOU DIE, CLICK THE REPLAY BUTTON AT THE TOP, THEN THE RUN BUTTON, THEN THE RESET BUTTON ON THE MMIO SCREEN
+
+#In order to run the bitmap display, go to tools -> Bitmap Display
+#On startup, set these display values:
+#	Unit Width in pixels: 16
+#	Unit Height in pixels: 16
+#	Display Width in pixels: 512
+#	Display Height in pixels: 256
+#	Base address for display: 0x10008000 ($gp) <--------
+#Connect and reset it in the same way as the MMIO Simulator
 # thank you for reading :)
+
 
 
 #adresses occupied:
@@ -16,7 +27,7 @@
 #s3 - time of last update
 #s4 - number of fruits eaten
 #t0 & t1 - temp values for all the macros
-#t2 - time elapsed since code began
+#t2 - time elapsed since code began, and other temporary values when a third is needed
 #t3 & t4 - user input direction
 .eqv optionSelect $t5
 .eqv speed $t6
@@ -28,16 +39,23 @@
 .data
 #holds all the info to draw what's happening
 screen: .word 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+
 deathScreen: .asciiz "\n\n\n\n\n                 You Died\n             Your score was "
 
 mainMenu: .asciiz "\n\n\n\n\nHello! Welcome to Snake in Assembly!\n Please select 's' to start or 'o' to go to options to get started!"
@@ -49,92 +67,102 @@ hard: .asciiz "\n\n\nYou have selected hard. Press 'c' to continue"
 
 #prints out the full grid with spaces for 0 and boxes for 1
 .macro drawScreen
-#reset t0 because it gets overridden all over the place
-	li $t0, 0
-#reset the previous screen drawn in the MMIO display
-	putChar(12)
+#reset t0 because it gets used elsewhere 
+li $t0, 0
 loop: 
-	#exit after traversing the array
-	beq $t0, 320, end
-	#print a new line every 16 digits 
-	rem $t1, $t0, 32
-	#skip if its the 0th space
-	beqz $t0, newLineReturn
-	beq $t1, 0, addLine
-	#if a new line was added, it jumps back here
-newLineReturn:
-	#iterate t0
-	addi $t0, $t0, 1
-	#load the value saved at s0
-	lw $t1, 0($s0)
-	li $v0, 11
-	#print a space if its 0
-	beq $t1, 0, printSpace
-	#print fruit if its 2
-	beq $t1, 2, printFruit
-	#print body symbol otherwise
-	j printBody
-	#afterward, they both jump back to loop
+#exit after traversing the full array (t0 is the loop counter)
+beq $t0, 512, end
+#load the value saved at each index of s0
+lw $t1, 0($s0)
+#print a red fruit if its 2
+beq $t1, 2, printFruit
+#print a grey wall if its 3
+beq $t1, 3, printWall
+#print a body segment if it still doesn't equal 0
+bnez $t1, printBody
+#otherwise, draw a black pixel
+j drawBlack
 
-addLine:
-	#character 10 = \n
-	putChar(10)
-	j newLineReturn
+printWall:
+#prints a grey pixel at that index
+putPix(0x8c8c8c)
+j continue
 
 printBody:
-	#prints an x
-	putChar('x')
-	#shifts s0 over to the next element
-	addi $s0, $s0, 4
-	j loop
+#prints a green pixel
+putPix(0x00ff00)
+j continue
 
 printFruit:
-	#prints an o
-	putChar('o')
-	#shifts s0 over to the next element
-	addi $s0, $s0, 4
-	j loop
+#prints a red pixel
+putPix(0xff0000)
+j continue
 
-printSpace:
-	#prints a space
-	putChar(32)
-	#shifts s0 over to the next element
-	addi $s0, $s0, 4
-	j loop
+drawBlack:
+#prints a black pixel
+putPix(0x00000000)
+
+continue:
+#shift s0 over to the next element
+addi $s0, $s0, 4
+#iterate t0
+addi $t0, $t0, 1
+#repeat for the next index
+j loop
 
 end:
-	#shift s0 back to its starting register
-	subi $s0, $s0, 1280
-	#exit
+#shift s0 back to its initial address after the traversal
+subi $s0, $s0, 2048
+#exit
 .end_macro 
 
+#prints a pixel of some color at index t0
+.macro putPix(%color) 
+# $t1 stores the base address for the bitmap display
+li $t1, 0x10008000
+#adjust t0 to the pixel size
+mul $t0, $t0, 4
+#shift the base adress up to the current pixel	
+add $t1, $t1, $t0
+#revert t0 in order to keep using it as a loop counter
+div $t0, $t0, 4
+#color that pixel whichever color it needs to be
+li $t2, %color
+sw $t2, 0($t1)
+#leave
+.end_macro 
+
+#draws the 'you died' screen
 .macro drawDeathScreen
-	#wipe the display
-	putChar(12)
-	#load the death screen to s0
-	la  $s0, deathScreen
-	#loop through s0 and print each char in order
+#wipe the display (passing the value 12 into the MMIO transmitter data register tells it to wipe the display)
+li $t0, 12
+putChar($t0)
+#load the death screen into s0
+la  $s0, deathScreen
+#loop through s0 and print each char in order
 loop:
-	#load the ascii value at each step of s0
-	lb  $a0, 0($s0)
-	#exit once the value is null
-	beq $a0, $zero, exit
-	#otherwise, wait for the display to be ready
-wait:
-	#load the reciever control register
-	lw  $t1, 0xffff0008($zero)   
-	#mask everything but the first bit (ready or not)
-	andi $t1, $t1, 1        
-	#if it's not ready, keep waiting
-	beq $t1, $zero, wait
-	#now that it's ready, load the ascii value into the transmitter data register
-	sw  $a0, 0xffff000c($zero) 
-	#move to the next character
-	addi $s0, $s0, 1
-	#jump back
-	j loop
+#load the ascii value at each index of s0
+lb  $a0, 0($s0)
+#exit once the value is null
+beq $a0, $zero, exit
+#otherwise, print it
+putChar($a0)
+#move to the next character
+addi $s0, $s0, 1
+#jump back for the next char in s0
+j loop
 exit:
-	#leave
+#print the player's score (the number of fruits eaten)
+putInt($s4)
+#wait until the display is finished with printing everything out (otherwise the program terminates too early)
+wait:
+#load the transmitter control register
+lw $t1, 0xffff0008($zero) 
+#mask off anything but the first bit (ready or not) 
+andi $t1, $t1, 1
+#if its not ready, keep waiting
+beqz $t1, wait
+#leave once it's done
 .end_macro 
 
 .macro drawMainMenu
@@ -175,100 +203,102 @@ exit:
 .macro putChar(%c)
 #wait till the display is ready to print
 wait:
-	#load the transmitter control register
-	lw $t1, 0xffff0008($zero)
-	#mask off anything but the first bit (ready or not)
-	andi $t1, $t1, 1
-	#if its not ready, keep waiting
-	beqz $t1, wait
-	#now that it's ready, store the char in the transmitter data register
-	li $t1, %c
-	sw $t1, 0xffff000c($zero)
-	#leave
+#load the transmitter control register
+lw $t2, 0xffff0008($zero) 
+#mask off anything but the first bit (ready or not) 
+andi $t2, $t2, 1
+#if its not ready, keep waiting
+beqz $t2, wait
+#now that it's ready, store the char in the transmitter data register
+move $t2, %c
+sw $t2, 0xffff000c($zero)
+#leave
 .end_macro
 
+#prints an integer up to 3 digits to the MMIO display
 .macro putInt(%i)
-	#t1 and t2 hold second and third digits. 
-	#if the number doesn't have a second/third digit, it's negative
-	li $t1, -1
-	li $t2, -1
-	#if there's 3 digits, go to printTripleDigit
-	bgt %i, 99, printTripleDigit
-	#if there's 2 digits, go to printDoubleDigit
-	bgt %i, 9, printDoubleDigit
-	#otherwise go to printSingleDigit 
-	j printSingleDigit
+#if there's 3 digits, go to printTripleDigit
+bgt %i, 99, printTripleDigit
+#if there's 2 digits, go to printDoubleDigit
+bgt %i, 9, printDoubleDigit
+#otherwise go to printSingleDigit 
+j printSingleDigit
 
 printTripleDigit:
-	#t2 = i%10 = last digit
-	rem $t2, %i, 10
-	#t1 = i%100 / 10 = middle digit
-	rem $t1, %i, 100
-	div $t1, $t1, 10
-	#t0 = i/100 = first digit
-	div $t0, %i, 100
-	#move to the printing step
-	j go
+
+#i/100 = first digit
+div $t0, %i, 100
+#shift the value up by 48 so it aligns with its ascii value
+addi $t0, $t0, 48
+#print the first digit
+putChar($t0)
+
+#i%100 / 10 = middle digit
+rem $t0, %i, 100
+div $t0, $t0, 10
+#shift the value again
+addi $t0, $t0, 48
+#print the middle digit
+putChar($t0)
+
+#i%10 = last digit
+rem $t0, %i, 10
+#shift the value
+addi $t0, $t0, 48
+#print the last digit
+putChar($t0)
+
+#skip to the exit
+j exit
 
 
 printDoubleDigit:
-	#t1 = i%10 = second digit
-	rem $t1, %i, 10
-	#t0 = i / 10 = first digit
-	div $t0, %i, 10
-	#move to the printing step
-	j go
+#i / 10 = first digit
+div $t0, %i, 10
+#shift the value
+addi $t0, $t0, 48
+#print the first digit
+putChar($t0)
+
+#i%10 = second digit
+rem $t0, %i, 10
+#shift the value
+addi $t0, $t0, 48
+#print the second digit
+putChar($t0)
+
+#skip to the exit
+j exit
+
+
 printSingleDigit:
-	#load the int to t0
-	move $t0, %i
-	
-go:
-	#move on to printing stuff
-	#wait until the transmitter is ready
-wait:
-	#load transmitter control register
-	lw $t3, 0xffff0008($zero)
-	#mask off everything but the first bit (ready or not)
-	andi $t3, $t3, 1
-	#if its not ready, keep waiting
-	beqz $t3, wait
-	#once it is, store it in the transmitter data register
-	addi $t0, $t0, 48
-	sw $t0, 0xffff000c($zero)
-	#if that was the only digit, leave
-	beq $t1, -1, finalWait
-	#otherwise repeat above for $t1
-	move $t0, $t1 
-	#then load $t2 into slot t1 so it happens on the next call
-	move $t1, $t2
-	#reset t2 if necessary
-	li $t2, -1
-	#repeat till t1 is -1
-	j wait
-	#wait again to make sure it gets printed
-finalWait:
-	#again, load the transmitter control register
-	lw $t1, 0xffff0008($zero)
-	#mask everything but the first bit (ready or not)
-	andi $t1, $t1, 1
-	#if its not ready, keep waiting
-	beqz $t1, finalWait
-	#leave once its done
+#load the int to t0
+move $t0, %i
+#shift the digits up to represent its corresponding ascii value
+addi $t0, $t0, 48
+#print the digit
+putChar($t0)
+
+#time to leave
 exit:
 .end_macro 
 
+
 #removes 1 tail, sets $s2 to the space it points to
 .macro trimTail
-	#load the tail's current value
-	#every segment holds the direction of the next segment in the snake
-	lw $t0, 0($s2)
-	#translate registers to bytes
-	mul $t0, $t0, 4
-	#clear the value of the old tail
-	sw $zero, 0($s2)
-	#move s2 to the next segment over
-	add $s2, $s2, $t0
-	li $t0, 0
+#convert the tail's address into a pixel index
+sub $t0, $s2, $s0
+div $t0, $t0, 4
+putPix(0x00000000)
+#load the tail's current value
+#every segment holds the direction of the next segment in the snake
+lw $t0, 0($s2)
+#translate registers to bytes
+mul $t0, $t0, 4
+#clear the value of the old tail
+sw $zero, 0($s2)
+#move s2 to the next segment over
+add $s2, $s2, $t0
 #exit
 .end_macro
 
@@ -301,40 +331,50 @@ eat:
 	#increment fruits eaten
 	addi $s4, $s4, 1
 continue:
-	#put a placeholder value in the new head, so it still gets drawn
-	li $t0, 1
-	sw $t0, 0($s1)
-	#exit
-	li $t0, 0
-.end_macro 
+#put a placeholder value in the new head, so the data array still knows it's a body segment
+li $t0, 1
+sw $t0, 0($s1)
+#get the distance in registers between the start of the grid and the new head location
+sub $t0, $s1, $s0
+#convert from registers to indexes in the screen array, and store that in t0 because putPix uses that register for the index
+div $t0, $t0, 4
+#draw the new head at that index
+putPix(0x00ff00)
+#exit
+li $t0, 0
+.end_macro
 
 #places a fruit on a random empty space on the map
 .macro spawnFruit
 #picks a random space until its empty
 loop:
-	#load a random integer
-	li $v0, 42
-	#set the upper bound to 321 (exclusive)
-	li $a1, 321
-	syscall
-	#translate unit distance for registers
-	mul $a0, $a0, 4
-	#shift $s0 by a0 spaces
-	add $s0, $s0, $a0
-	#load the value at that register
-	lw $t0, 0($s0)
-	#shift s0 back a0 spaces
-	sub $s0, $s0, $a0
-	#if the character at that space isn't 0, try again
-	bne $t0, 0, loop
-	#now that we know slot $a0 is free, shift $s0 back over there
-	add $s0, $s0, $a0
-	#store 2 in that register
-	li $t0, 2
-	sw $t0, 0($s0)
-	#shift $s0 back to the first register
-	sub $s0, $s0, $a0
-	#leave
+#load a random integer
+li $v0, 42
+#set the upper bound to 512 exclusive (the pixels are from index 0 to 511)
+li $a1, 512
+syscall
+#translate unit distance for registers
+mul $a0, $a0, 4
+#shift $s0 by a0 spaces
+add $s0, $s0, $a0
+#load the value at that register
+lw $t0, 0($s0)
+#shift s0 back a0 spaces
+sub $s0, $s0, $a0
+#if the character at that space isn't 0, try again
+bne $t0, 0, loop
+#now that we know slot $a0 is free, shift $s0 back over there
+add $s0, $s0, $a0
+#store 2 in that register
+li $t0, 2
+sw $t0, 0($s0)
+#convert a0 back to an index, and store it in t0
+div $t0, $a0, 4
+#draw a fruit pixel at that index
+putPix(0xff0000)
+#shift $s0 back to the first register
+sub $s0, $s0, $a0
+#leave
 .end_macro 
 
 
@@ -434,7 +474,7 @@ test:
 	lw $a0, 4($t0)
 cont:
 	move optionSelect, $a0
-	beq optionSelect, 's', start
+	beq optionSelect, 's', waitForDisplay
 	beq optionSelect, 'o', option
 	#if select option, go to settings
 	#otherwise, go to start
@@ -455,66 +495,67 @@ errorOp:
 	j option
 	
 #----------------------ACTUAL SNAKE GAME-------------------------#
-start:
-	#reset to zero
-	move $t0, $zero
-	move $t1, $zero
-	
-	#start keeping track of system time
-	li $v0, 30
-	syscall
-	move $s3, $a0
-	#screen stays in $s0
-	la $s0, screen
-	#starting the head at space 103
-	addi $s1, $s0, 428
-	#starting the tail at space 99
-	addi $s2, $s0, 392
-	#start the direction moving right
-	li $t3, 'd'
-	#start the number of fruits eaten at 0
-	li $s4, 0
-	
-	#movement
+waitForDisplay:
+#make sure the MMIO display and controller are connected first
+#load in the display transmitter control register
+lw $t0, 0xFFFF0008($zero)
+#mask off everything but the first bit, which is reserved for whether the display is ready
+andi $t0, $t0, 1
+#if the display isn't ready (the bit isn't 1), halt everything until it is
+bne $t0, 1, waitForDisplay
+#start keeping track of system time
+li $v0, 30
+syscall
+move $s3, $a0
+#screen stays in $s0
+la $s0, screen
+#starting the head at space 107
+addi $s1, $s0, 428
+#starting the tail at space 98
+addi $s2, $s0, 392
+#start the direction moving right
+li $t3, 'd'
+#start the number of fruits eaten at 0
+li $s4, 0
+#draw the initial board
+drawScreen
+
+#movement
 loop:
-	#load the time since starting the program
-	li $v0, 30
-	syscall
-	#load the reciever control register
-	lw $t0, 0xFFFF0000($zero)
-	#check if there is a key pressed (the first bit stores that)
-	andi $t0, $t0, 0x0001
-	#if something was pressed, go to the method
-	bgt $t0, $zero, changeDirection
-	#loop back to the top if not enough time has passed
-	subu $t2, $a0, $s3  
-	#step speed
-	bltu $t2, $t6, loop
-	#now that we're ready, update $s3 to mark this timestamp
-	move $s3, $a0     
-	
-	#if 2 keypresses have come through since the last update, handle the old one first
-	#if t1 is 1, there are 2 or more keypresses to process
-	#if t1 doesnt equal 1, skip over to safeToMoveSnake
-	bne $t1, 1, safeToMoveSnake
-	#otherwise, move with the older direction
-	moveSnake($t4)
-	#update the screen
-	drawScreen
-	#reset $t1 back to 0
-	li $t1, 0
-	#skip back up to handle the second value
-	j loop
-	
-	#if we're here, there's only one keypress to process
+#load the time since starting the program
+li $v0, 30
+syscall
+#load the reciever control register
+lw $t0, 0xFFFF0000($zero)
+#check if there is a key pressed (the first bit stores that)
+andi $t0, $t0, 0x0001
+#if something was pressed, go to the method
+bgt $t0, $zero, changeDirection
+#loop back to the top if not enough time has passed
+subu $t2, $a0, $s3  
+#step speed
+bltu $t2, 175 loop
+#now that we're ready, update $s3 to mark this timestamp
+move $s3, $a0     
+
+#if 2 keypresses have come through since the last update, handle the old one first
+#if t1 is 1, there are 2 or more keypresses to process
+#if t1 doesnt equal 1, skip over to safeToMoveSnake
+bne $t1, 1, safeToMoveSnake
+#otherwise, move with the older direction
+moveSnake($t4)
+#reset $t1 back to 0
+li $t1, 0
+#skip back up to handle the second value
+j loop
+
+#if we're here, there's only one keypress to process
 safeToMoveSnake:
-	#move in that direction
-	moveSnake($t3)
-	#update the screen
-	drawScreen
-	#save the last direction that was executed and drawn
-	move $t4, $t3
-	j loop
+#move in that direction
+moveSnake($t3)
+#save the last direction that was executed and drawn
+move $t4, $t3
+j loop
 
 changeDirection:
 	#make sure $t3 hold the last dirction EXECUTED, so that unexecuted instructions don't get overridden
@@ -552,10 +593,8 @@ keyOK:
 	j loop
 	
 death:
-	#clear the game screen and print a death screen
-	drawDeathScreen
-	#print the number of fruits eaten
-	putInt($s4)
-	#exit program
-	li $v0, 10
-	syscall
+#clear the game screen and print a death screen
+drawDeathScreen
+#exit program
+li $v0, 10
+syscall
