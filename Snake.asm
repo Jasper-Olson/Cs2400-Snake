@@ -21,15 +21,20 @@
 
 
 #adresses occupied:
-#s0  - address 0 of the screen
-#s1 - snake head's address
+.eqv screenAddress $s0 #s0  - address 0 of the screen
+.eqv snakeHead $s1 #s1 - snake head's address
 #s2 - snake tail's address
 #s3 - time of last update
 #s4 - number of fruits eaten
 #t0 & t1 - temp values for all the macros
 #t2 - time elapsed since code began, and other temporary values when a third is needed
 #t3 & t4 - user input direction
+.eqv optionSelect $t5
+.eqv speed $t6
+.eqv baseAddress 0xffff0000
 
+
+.include "macrosSnake.asm"
 
 .data
 #holds all the info to draw what's happening
@@ -52,6 +57,13 @@ screen: .word
 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 
 deathScreen: .asciiz "\n\n\n\n\n                 You Died\n             Your score was "
+
+mainMenu: .asciiz "\n\n\n\n\nHello! Welcome to Snake in Assembly!\n Please select 's' to start or 'o' to go to options to get started!"
+options: .asciiz "\n\n\nYou have selected the menu Option, \nyou can change the speed of the snake to make things harder or easier for you!\nPlease enter 'e' for easy mode, 'n' for normal mode, and 'h' for hard mode. \nIf you would like to go back, please enter 'b'."
+error: .asciiz "n\n\n\nError: Not an option is selected, please try again."
+easy: .asciiz "\n\n\nYou have selected easy. Press 'c' to continue."
+normal: .asciiz "\n\n\nYou have selected normal. Press 'c' to continue."
+hard: .asciiz "\n\n\nYou have selected hard. Press 'c' to continue"
 
 #prints out the full grid with spaces for 0 and boxes for 1
 .macro drawScreen
@@ -152,6 +164,40 @@ andi $t1, $t1, 1
 beqz $t1, wait
 #leave once it's done
 .end_macro 
+
+.macro drawMainMenu
+	#load the main menu
+	putChar(12)
+	la $s0, mainMenu
+loop: 
+	lb $a0, 0($s0) #load byte into $a0, from the offset(base address(screen))
+	beq $a0, $zero, exit #exit once value is null just like death screen
+wait:
+	lw $t1, 0xffff0008($zero)
+	andi $t1, $t1, 1
+	beq $t1, $zero, wait
+	sw $a0, 0xffff000c($zero)
+	addi $s0, $s0, 1
+	j loop
+exit:
+.end_macro
+
+.macro drawOption
+	putChar(12)
+	la $s0, options
+loop: 
+	lb $a0, 0($s0) #load byte into $a0, from the offset(base address(screen))
+	beq $a0, $zero, exit #exit once value is null just like death screen
+wait:
+	lw $t1, 0xffff0008($zero)
+	andi $t1, $t1, 1
+	beq $t1, $zero, wait
+	sw $a0, 0xffff000c($zero)
+	addi $s0, $s0, 1
+	j loop
+	
+exit:
+.end_macro
 
 #prints a character, or clears the display
 .macro putChar(%c)
@@ -259,31 +305,31 @@ add $s2, $s2, $t0
 
 #Moves the head 1 unit in direction dir
 .macro moveHead(%dir) 
-#dir equals -1, +1, -32, or +32, which are the number of 
-#units needed to shift right, left, up, or down
-move $t0, %dir
-#save the new direction value to the old head
-sw $t0, 0($s1)
-#translate from registers to bytes 
-mul $t0, $t0, 4
-#move that many spaces forward
-add $s1, $s1, $t0
-#skip trimming if it's a fruit
-lw $t0, 0($s1)
-beq $t0, 2, eat
-#otherwise, trim the tail
-trimTail
-#die if the next space is a body segment or wall
-lw $t0, 0($s1)
-bnez  $t0, death 
-#skip to here assuming it was a fruit
+	#dir equals -1, +1, -32, or +32, which are the number of 
+	#units needed to shift right, left, up, or down
+	move $t0, %dir
+	#save the new direction value to the old head
+	sw $t0, 0($s1)
+	#translate from registers to bytes 
+	mul $t0, $t0, 4
+	#move that many spaces forward
+	add $s1, $s1, $t0
+	#skip trimming if it's a fruit
+	lw $t0, 0($s1)
+	beq $t0, 2, eat
+	#otherwise, trim the tail
+	trimTail
+	#die if the next space is a body segment or wall
+	lw $t0, 0($s1)
+	bnez  $t0, death 
+	#skip to here assuming it was a fruit
 eat:
-#pass by unless it was a fruit
-bne $t0, 2, continue
-#otherwise spawn a new fruit somewhere else
-spawnFruit
-#increment fruits eaten
-addi $s4, $s4, 1
+	#pass by unless it was a fruit
+	bne $t0, 2, continue
+	#otherwise spawn a new fruit somewhere else
+	spawnFruit
+	#increment fruits eaten
+	addi $s4, $s4, 1
 continue:
 #put a placeholder value in the new head, so the data array still knows it's a body segment
 li $t0, 1
@@ -335,41 +381,120 @@ sub $s0, $s0, $a0
 
 #combine moveHead and trimTail, taking WASD as a parameter
 .macro moveSnake (%dir)
-move $t0, %dir
-#check what the input was
-beq $t0, 'w', wCase
-beq $t0, 'a', aCase
-beq $t0, 's', sCase
-beq $t0, 'd', dCase
-#if it was something else, disregard it
-j exit
+	move $t0, %dir
+	#check what the input was
+	beq $t0, 'w', wCase
+	beq $t0, 'a', aCase
+	beq $t0, 's', sCase
+	beq $t0, 'd', dCase
+	#if it was something else, disregard it
+	j exit
 wCase:
-#w = up = back 32 spaces 
-li $t0, -32
-#jump to what comes next, so t0 doesn't get overridden
-j next
+	#w = up = back 32 spaces 
+	li $t0, -32
+	#jump to what comes next, so t0 doesn't get overridden
+	j next
 aCase:
-#a = left = back 1 space
-li $t0, -1
-j next
+	#a = left = back 1 space
+	li $t0, -1
+	j next
 sCase:
-#s = down = forward 32 spaces
-li $t0, 32
-j next
+	#s = down = forward 32 spaces
+	li $t0, 32
+	j next
 dCase:
-#d = right = forward 1 space
-li $t0, 1
-
+	#d = right = forward 1 space
+	li $t0, 1
+	
 next:
-#pass in t0 for moveHead
-moveHead($t0)
-#leave
+	#pass in t0 for moveHead
+	moveHead($t0)
+	#leave
 exit:
 .end_macro 
 
+.macro Options(%int)
+	move $t0, %int
+	beq $t0, 'e', easySp
+	beq $t0, 'n', normalSp
+	beq $t0, 'h', hardSp
+easySp:
+	putChar(12)
+	printInMMIO(easy)
+	li speed, 225
+easyloop:
+	lui $t0, 0xffff
+	lw $t1, 0($t0)
+	andi $t1, $t1, 0x0001
+	beq $t1, $zero, easyloop
+	lw $a0, 4($t0)
+	move optionSelect, $a0
+	beq optionSelect, 'c', exit
+	j easyloop
+normalSp:
+	putChar(12)
+	printInMMIO(normal)
+	li speed, 175
+normalloop:
+	lui $t0, 0xffff
+	lw $t1, 0($t0)
+	andi $t1, $t1, 0x0001
+	beq $t1, $zero, normalloop
+	lw $a0, 4($t0)
+	move optionSelect, $a0
+	beq $a0, 'c', exit
+	j normalSp
+hardSp:
+	putChar(12)
+	printInMMIO(hard)
+	li speed, 110
+hardloop:
+	lui $t0, 0xffff
+	lw $t1, 0($t0)
+	andi $t1, $t1, 0x0001
+	beq $t1, $zero, hardloop
+	lw $a0, 4($t0)
+	move optionSelect, $a0
+	beq $a0, 'c', exit
+	j hardSp
+exit:
+.end_macro
+
 #-----------------------------------------------------------------------------------
 .text
+	li speed, 225
 main:
+	drawMainMenu
+	#get input
+	lui $t0, 0xffff
+test:
+	lw $t1, 0($t0)
+	andi $t1, $t1, 0x0001
+	beq $t1, $zero, test
+	lw $a0, 4($t0)
+cont:
+	move optionSelect, $a0
+	beq optionSelect, 's', waitForDisplay
+	beq optionSelect, 'o', option
+	#if select option, go to settings
+	#otherwise, go to start
+	
+option:
+	drawOption
+loopOption:
+	lw $t1, 0($t0)
+	andi $t1, $t1, 0x0001
+	beq $t1, $zero, loopOption
+	lw $a0, 4($t0)
+	move optionSelect, $a0
+	beq optionSelect, 'b', main
+	Options(optionSelect)
+	j errorOp
+errorOp:
+	printInMMIO(error)
+	j option
+	
+#----------------------ACTUAL SNAKE GAME-------------------------#
 waitForDisplay:
 #make sure the MMIO display and controller are connected first
 #load in the display transmitter control register
@@ -433,40 +558,40 @@ move $t4, $t3
 j loop
 
 changeDirection:
-#make sure $t3 hold the last dirction EXECUTED, so that unexecuted instructions don't get overridden
-beq $t3, $t4, sameDir
-#if the old $t3 hasn't been run yet, flag $t1 to let MoveSnake run the old one first
-li $t1, 1
-#save the old value to t4 before t3 gets overridden
-move $t4, $t3
+	#make sure $t3 hold the last dirction EXECUTED, so that unexecuted instructions don't get overridden
+	beq $t3, $t4, sameDir
+	#if the old $t3 hasn't been run yet, flag $t1 to let MoveSnake run the old one first
+	li $t1, 1
+	#save the old value to t4 before t3 gets overridden
+	move $t4, $t3
 sameDir:
-#load the new keypress into $t0 to check if the input was valid
-#first, make sure the key is W,A,S, or D
-#load the reciever data register to $t0
-lw $t0, 0xFFFF0004($zero)
-beq $t0, 'w', keyOK    
-beq $t0, 'a', keyOK
-beq $t0, 's', keyOK
-beq $t0, 'd', keyOK
-j loop         
+	#load the new keypress into $t0 to check if the input was valid
+	#first, make sure the key is W,A,S, or D
+	#load the reciever data register to $t0
+	lw $t0, 0xFFFF0004($zero)
+	beq $t0, 'w', keyOK
+	beq $t0, 'a', keyOK
+	beq $t0, 's', keyOK
+	beq $t0, 'd', keyOK
+	j loop         
 keyOK:
-#next, make sure it's not trying to back into itself
-#pressing w after s
-subi $t0, $t0, 4
-beq $t0, $t3, loop
-#pressing s after w
-addi $t0, $t0, 8
-beq $t0, $t3, loop
-#pressing d after a
-subi $t0, $t0, 7
-beq $t0, $t3, loop
-#pressing a after d
-addi $t0, $t0, 6
-beq $t0, $t3, loop
-#otherwise, the key press is valid, so update the direction from the reciever data in $t3
-lw $t3, 0xFFFF0004($zero)
-j loop
-
+	#next, make sure it's not trying to back into itself
+	#pressing w after s
+	subi $t0, $t0, 4
+	beq $t0, $t3, loop
+	#pressing s after w
+	addi $t0, $t0, 8
+	beq $t0, $t3, loop
+	#pressing d after a
+	subi $t0, $t0, 7
+	beq $t0, $t3, loop
+	#pressing a after d
+	addi $t0, $t0, 6
+	beq $t0, $t3, loop
+	#otherwise, the key press is valid, so update the direction from the reciever data in $t3
+	lw $t3, 0xFFFF0004($zero)
+	j loop
+	
 death:
 #clear the game screen and print a death screen
 drawDeathScreen
