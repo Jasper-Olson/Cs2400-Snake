@@ -415,3 +415,32 @@ hardloop:
 	j hardSp
 exit:
 .end_macro
+
+
+.macro musicMacro
+		lw $a0, 0($s5)		#load the pitch in $a0
+		addi $s5, $s5, 4
+		lw $a1, 0($s5)		#load the duration in $a1
+		move chimeSpeed, $a1	#give that info to chimespeed to know when to call the macro next
+		addi $s5, $s5, 4	#iterate s5
+		beq $a0, 0, skip	#if the pitch is 0, leave and don't update chimespeed
+
+		addi $a1, $a1, 50	#hold the note a little bit longer than the chime speed planned for (helps smoothe over any lag between notes)
+		li $a2, 4		#set the instrument (electric piano)
+		li $a3, 64		#set the volume
+		li $v0, 31		#send that info to the MIDI out
+		syscall
+		j exit			#head out
+		
+		reset:
+		la $s5, music		#set s5 back to the base adress of the music sheet
+		li $s6, 0		#start the counter over
+		
+		skip:
+		li chimeSpeed, 0	#set the chime speed to 0, so there isn't a pause between non-empty notes
+		
+		exit:
+		#counter (for the total # of values in the music .word, which is 362)
+		beq $s6, 234, reset
+		addi $s6, $s6, 1
+.end_macro
